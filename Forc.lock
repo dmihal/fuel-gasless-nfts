@@ -1,0 +1,44 @@
+[[package]]
+name = "core"
+source = "path+from-root-BD9159206068AEC6"
+
+[[package]]
+name = "gas_predicate"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
+name = "nft"
+source = "member"
+dependencies = [
+    "shared",
+    "std",
+]
+
+[[package]]
+name = "nft_script"
+source = "member"
+dependencies = [
+    "shared",
+    "std",
+]
+
+[[package]]
+name = "owner_predicate"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
+name = "packet_minter"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
+name = "shared"
+source = "path+from-root-A80B1280810C2185"
+dependencies = ["std"]
+
+[[package]]
+name = "std"
+source = "git+https://github.com/fuellabs/sway?tag=v0.46.1#512a3386f8961185188302f391ccc96553d23a7a"
+dependencies = ["core"]
