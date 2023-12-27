@@ -1,5 +1,12 @@
 use fuels::{prelude::*, types::ContractId};
 use fuels::types::Bits256;
+use fuels::tx::Bytes32;
+use fuels::types::output::Output;
+use fuels::types::TxPointer;
+use fuels::types::UtxoId;
+use fuels::types::input::Input;
+use fuels::types::transaction_builders::ScriptTransactionBuilder;
+use fuels::types::transaction_builders::TransactionBuilder;
 use fuels::accounts::predicate::Predicate;
 use sha2::{Digest, Sha256};
 use fuels::tx::Receipt;
@@ -72,6 +79,8 @@ async fn can_use_script() {
     let wallets = get_wallets().await;
     let deployer = &wallets[0];
     let user = &wallets[1];
+    let fuel_provider = deployer.provider().unwrap();
+    let network_info = fuel_provider.network_info().await.unwrap();
 
     let nft_instance = get_contract_instance(deployer).await;
     let (_script, script_hash) = get_script(user.clone(), nft_instance.id().into()).await;
@@ -81,21 +90,72 @@ async fn can_use_script() {
         .await
         .unwrap();
 
-    let (script, _script_hash) = get_script(predicate, nft_instance.id().into()).await;
+    let (script, _script_hash) = get_script(predicate.clone(), nft_instance.id().into()).await;
 
-    let result = script
-        .main(user.address())
-        .with_contracts(&[&nft_instance])
-        .append_variable_outputs(1)
-        .call()
+    let mut inputs = vec![
+        Input::Contract {
+            utxo_id: UtxoId::new(Bytes32::zeroed(), 0),
+            balance_root: Bytes32::zeroed(),
+            state_root: Bytes32::zeroed(),
+            tx_pointer: TxPointer::default(),
+            contract_id: nft_instance.id().into(),
+        },
+    ];
+
+    let eth_inputs = predicate
+        .get_asset_inputs_for_amount(BASE_ASSET_ID, 1000)
         .await
         .unwrap();
+    inputs.extend(eth_inputs);
 
-    println!("{:?}", result);
+    let contract_output = Output::Contract {
+        input_index: 1u8,
+        balance_root: Bytes32::zeroed(),
+        state_root: Bytes32::zeroed(),
+    };
 
-    for item in result.receipts.iter() {
+    let outputs = vec![
+        Output::Contract {
+            input_index: 0u8,
+            balance_root: Bytes32::zeroed(),
+            state_root: Bytes32::zeroed(),
+        },
+        Output::Variable {
+            to: Address::default(),
+            amount: 0,
+            asset_id: AssetId::default(),
+        },
+        Output::Change {
+            to: predicate.address().into(),
+            amount: 0,
+            asset_id: BASE_ASSET_ID,
+        }
+    ];
+
+    // Create the Tx
+    let transaction_builder = ScriptTransactionBuilder::prepare_transfer(
+        inputs,
+        outputs,
+        TxParameters::default(),
+        network_info.clone(),
+    )
+        .with_script(script.main(user.address()).script_call.script_binary)
+        .with_script_data(script.main(user.address()).script_call.encoded_args.resolve(0));
+
+    let script_transaction = transaction_builder.build().unwrap();
+
+    // Now that we have the Tx the Ethereum wallet must sign the ID of the Fuel Tx
+    let expected_tx_id = script_transaction.id(network_info.chain_id());
+
+    let actual_tx_id = fuel_provider.send_transaction_and_await_commit(script_transaction).await.unwrap();
+    assert_eq!(expected_tx_id, actual_tx_id);
+
+    let tx_status = fuel_provider.tx_status(&actual_tx_id).await.unwrap();
+    let receipts = tx_status.take_receipts_checked(None).unwrap();
+
+    for item in receipts.iter() {
         match item {
-            Receipt::Mint{ sub_id, contract_id, .. } => {
+            Receipt::Mint{ contract_id, .. } => {
                 let nft_id: ContractId = nft_instance.id().into();
                 assert!(contract_id.clone() == nft_id);
             },
@@ -127,3 +187,7 @@ async fn can_use_script() {
 //         .is_err();
 //     assert!(is_err);
 // }
+
+fn vec_to_str(vec: &Vec<u8>) -> String {
+    vec.iter().map(|b| format!("{:02x}", b)).collect()
+}
