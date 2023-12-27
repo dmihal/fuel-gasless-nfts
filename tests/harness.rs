@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use fuels::tx::Receipt;
 
 abigen!(
-    // Predicate(name = "ForcedScriptPredicate", abi = "./out/debug/forced-script-predicate-abi.json"),
+    Predicate(name = "GasPredicate", abi = "./gas_predicate/out/debug/gas_predicate-abi.json"),
     Script(name = "NFTScript", abi = "./nft_script/out/debug/nft_script-abi.json"),
     Contract(name = "NFT", abi = "./nft/out/debug/nft-abi.json"),
 );
@@ -55,17 +55,17 @@ async fn get_script<T: Account>(account: T, nft: ContractId) -> (NFTScript<T>, B
     (script, b256)
 }
 
-// fn get_predicate(script_hash: Bits256, provider: &Provider) -> Predicate {
-//     let configurables = ForcedScriptPredicateConfigurables::new()
-//         .with_EXPECTED_SCRIPT_BYTECODE_HASH(script_hash);
+fn get_predicate(script_hash: Bits256, provider: &Provider) -> Predicate {
+    let configurables = GasPredicateConfigurables::new()
+        .with_EXPECTED_SCRIPT_BYTECODE_HASH(script_hash);
 
-//     let mut predicate: Predicate = Predicate::load_from("out/debug/forced-script-predicate.bin")
-//         .unwrap()
-//         .with_configurables(configurables);
-//     predicate.set_provider(provider.clone());
+    let mut predicate: Predicate = Predicate::load_from("./gas_predicate/out/debug/gas_predicate.bin")
+        .unwrap()
+        .with_configurables(configurables);
+    predicate.set_provider(provider.clone());
 
-//     predicate
-// }
+    predicate
+}
 
 #[tokio::test]
 async fn can_use_script() {
@@ -74,15 +74,14 @@ async fn can_use_script() {
     let user = &wallets[1];
 
     let nft_instance = get_contract_instance(deployer).await;
-    let (script, script_hash) = get_script(user.clone(), nft_instance.id().into()).await;
-    // let predicate = get_predicate(script_hash, deployer.provider().unwrap());
+    let (_script, script_hash) = get_script(user.clone(), nft_instance.id().into()).await;
+    let predicate = get_predicate(script_hash, deployer.provider().unwrap());
 
-    // deployer.transfer(predicate.address(), 10000, BASE_ASSET_ID, TxParameters::default())
-    //     .await
-    //     .unwrap();
+    deployer.transfer(predicate.address(), 10000, BASE_ASSET_ID, TxParameters::default())
+        .await
+        .unwrap();
 
-
-    // let (script, _script_hash) = get_script(predicate, contract_instance.id().into()).await;
+    let (script, _script_hash) = get_script(predicate, nft_instance.id().into()).await;
 
     let result = script
         .main(user.address())
@@ -93,7 +92,7 @@ async fn can_use_script() {
         .unwrap();
 
     println!("{:?}", result);
-    
+
     for item in result.receipts.iter() {
         match item {
             Receipt::Mint{ sub_id, contract_id, .. } => {
