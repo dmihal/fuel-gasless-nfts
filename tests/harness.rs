@@ -62,8 +62,9 @@ async fn get_script<T: Account>(account: T, nft: ContractId) -> (NFTScript<T>, B
     (script, b256)
 }
 
-fn get_predicate(script_hash: Bits256, provider: &Provider) -> Predicate {
+fn get_predicate(script_hash: Bits256, signer: Address, provider: &Provider) -> Predicate {
     let configurables = GasPredicateConfigurables::new()
+        .with_SIGNER(signer)
         .with_EXPECTED_SCRIPT_BYTECODE_HASH(script_hash);
 
     let mut predicate: Predicate = Predicate::load_from("./gas_predicate/out/debug/gas_predicate.bin")
@@ -84,7 +85,7 @@ async fn can_use_script() {
 
     let nft_instance = get_contract_instance(deployer).await;
     let (_script, script_hash) = get_script(user.clone(), nft_instance.id().into()).await;
-    let predicate = get_predicate(script_hash, deployer.provider().unwrap());
+    let predicate = get_predicate(script_hash, deployer.address().into(), deployer.provider().unwrap());
 
     deployer.transfer(predicate.address(), 10000, BASE_ASSET_ID, TxParameters::default())
         .await
@@ -142,10 +143,11 @@ async fn can_use_script() {
         .with_script(script.main(user.address()).script_call.script_binary)
         .with_script_data(script.main(user.address()).script_call.encoded_args.resolve(0));
 
-    let script_transaction = transaction_builder.build().unwrap();
+    let mut script_transaction = transaction_builder.build().unwrap();
 
-    // Now that we have the Tx the Ethereum wallet must sign the ID of the Fuel Tx
     let expected_tx_id = script_transaction.id(network_info.chain_id());
+    let signature = deployer.sign_message(expected_tx_id).await.unwrap();
+    script_transaction.append_witness(signature.as_ref().into());
 
     let actual_tx_id = fuel_provider.send_transaction_and_await_commit(script_transaction).await.unwrap();
     assert_eq!(expected_tx_id, actual_tx_id);
