@@ -68,8 +68,11 @@ fn get_predicate(script_hash: Bits256, signer: Address, nft_contract_id: Contrac
         .with_NFT_CONTRACT_ID(nft_contract_id)
         .with_EXPECTED_SCRIPT_BYTECODE_HASH(script_hash);
 
+    let predicate_data = GasPredicateEncoder::encode_data(vec![]);
+
     let mut predicate: Predicate = Predicate::load_from("./gas_predicate/out/debug/gas_predicate.bin")
         .unwrap()
+        .with_data(predicate_data)
         .with_configurables(configurables);
     predicate.set_provider(provider.clone());
 
@@ -87,7 +90,7 @@ async fn can_use_script() {
 
     let nft_instance = get_contract_instance(deployer).await;
     let (_script, script_hash) = get_script(user.clone(), nft_instance.id().into()).await;
-    let predicate = get_predicate(
+    let mut predicate = get_predicate(
         script_hash,
         deployer.address().into(),
         nft_instance.id().into(),
@@ -183,6 +186,8 @@ async fn can_use_script() {
     // =================
     // Do basic transfer
     // =================
+
+    let predicate = predicate.with_data(GasPredicateEncoder::encode_data(vec![Bits256(nft_sub_id.unwrap().into())]));
 
     let mut nft_inputs = user
         .get_asset_inputs_for_amount(nft_asset_id.unwrap(), 1)
