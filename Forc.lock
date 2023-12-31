@@ -34,6 +34,11 @@ source = "member"
 dependencies = ["std"]
 
 [[package]]
+name = "packet_predicate"
+source = "member"
+dependencies = ["std"]
+
+[[package]]
 name = "shared"
 source = "path+from-root-A80B1280810C2185"
 dependencies = ["std"]

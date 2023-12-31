@@ -1,0 +1,16 @@
+[package]
+name = "packet_predicate"
+version = "0.1.0"
+edition = "2021"
+authors = ["dmihal <david@dmihal.com>"]
+license = "Apache-2.0"
+
+[dev-dependencies]
+fuels = { version = "0.50.0", features = ["fuel-core-lib"] }
+tokio = { version = "1.12", features = ["rt", "macros"] }
+sha2 = "0.10.8"
+
+[[test]]
+harness = true
+name = "integration_tests"
+path = "tests/harness.rs"
