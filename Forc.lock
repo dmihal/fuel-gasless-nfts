@@ -31,7 +31,10 @@ dependencies = ["std"]
 [[package]]
 name = "packet_minter"
 source = "member"
-dependencies = ["std"]
+dependencies = [
+    "shared",
+    "std",
+]
 
 [[package]]
 name = "packet_predicate"

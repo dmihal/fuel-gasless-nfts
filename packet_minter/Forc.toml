@@ -5,3 +5,4 @@ license = "Apache-2.0"
 name = "packet_minter"
 
 [dependencies]
+shared = { path = "../shared" }

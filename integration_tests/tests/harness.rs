@@ -12,9 +12,9 @@ use sha2::{Digest, Sha256};
 use fuels::tx::Receipt;
 
 abigen!(
-    Predicate(name = "GasPredicate", abi = "./gas_predicate/out/debug/gas_predicate-abi.json"),
-    Script(name = "NFTScript", abi = "./nft_script/out/debug/nft_script-abi.json"),
-    Contract(name = "NFT", abi = "./nft/out/debug/nft-abi.json"),
+    Predicate(name = "GasPredicate", abi = "gas_predicate/out/debug/gas_predicate-abi.json"),
+    Script(name = "NFTScript", abi = "nft_script/out/debug/nft_script-abi.json"),
+    Contract(name = "NFT", abi = "nft/out/debug/nft-abi.json"),
 );
 
 async fn get_wallets() -> Vec<WalletUnlocked> {
@@ -37,7 +37,7 @@ async fn get_wallets() -> Vec<WalletUnlocked> {
 async fn get_contract_instance(wallet: &WalletUnlocked) -> NFT<WalletUnlocked> {
     let configurables = NFTConfigurables::new().with_MAX_SUPPLY(1000);
     let id = Contract::load_from(
-        "./nft/out/debug/nft.bin",
+        "../nft/out/debug/nft.bin",
         LoadConfiguration::default().with_configurables(configurables),
     )
     .unwrap()
@@ -52,7 +52,7 @@ async fn get_contract_instance(wallet: &WalletUnlocked) -> NFT<WalletUnlocked> {
 
 async fn get_script<T: Account>(account: T, nft: ContractId) -> (NFTScript<T>, Bits256) {
     let configurables = NFTScriptConfigurables::new().with_NFT_CONTRACT(nft);
-    let script = NFTScript::new(account.clone(), "./nft_script/out/debug/nft_script.bin")
+    let script = NFTScript::new(account.clone(), "../nft_script/out/debug/nft_script.bin")
         .with_configurables(configurables);
 
     let mut hasher = Sha256::new();
@@ -70,7 +70,7 @@ fn get_predicate(script_hash: Bits256, signer: Address, nft_contract_id: Contrac
 
     let predicate_data = GasPredicateEncoder::encode_data(vec![]);
 
-    let mut predicate: Predicate = Predicate::load_from("./gas_predicate/out/debug/gas_predicate.bin")
+    let mut predicate: Predicate = Predicate::load_from("../gas_predicate/out/debug/gas_predicate.bin")
         .unwrap()
         .with_data(predicate_data)
         .with_configurables(configurables);
@@ -90,7 +90,7 @@ async fn can_use_script() {
 
     let nft_instance = get_contract_instance(deployer).await;
     let (_script, script_hash) = get_script(user.clone(), nft_instance.id().into()).await;
-    let mut predicate = get_predicate(
+    let predicate = get_predicate(
         script_hash,
         deployer.address().into(),
         nft_instance.id().into(),
@@ -118,12 +118,6 @@ async fn can_use_script() {
         .await
         .unwrap();
     inputs.extend(eth_inputs);
-
-    let contract_output = Output::Contract {
-        input_index: 1u8,
-        balance_root: Bytes32::zeroed(),
-        state_root: Bytes32::zeroed(),
-    };
 
     let outputs = vec![
         Output::Contract {
@@ -179,6 +173,9 @@ async fn can_use_script() {
                 assert!(to.clone() == user_address);
                 nft_asset_id = Some(*asset_id);
             },
+            Receipt::LogData{ data, .. } => {
+                println!("LogData: {}", vec_to_str(&data.clone().unwrap()));
+            },
             _ => {},
         }
     }
@@ -233,7 +230,7 @@ async fn can_use_script() {
     assert_eq!(expected_tx_id, actual_tx_id);
 
     let tx_status = fuel_provider.tx_status(&actual_tx_id).await.unwrap();
-    let receipts = tx_status.take_receipts_checked(None).unwrap();
+    let _receipts = tx_status.take_receipts_checked(None).unwrap();
 }
 
 fn vec_to_str(vec: &Vec<u8>) -> String {

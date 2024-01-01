@@ -5,22 +5,15 @@ use fuels::{
     },
     prelude::*,
     types::{
-        input::Input,
         output::Output,
         transaction_builders::ScriptTransactionBuilder,
         transaction_builders::TransactionBuilder,
-        Bits256,
-        UtxoId,
-    },
-    tx::{
-        Bytes32,
-        Receipt,
     },
 };
 
 abigen!(Predicate(
     name = "PacketPredicate",
-    abi = "./out/debug/packet_predicate-abi.json"
+    abi = "packet_predicate/out/debug/packet_predicate-abi.json"
 ));
 
 pub const TOKEN_A: AssetId = AssetId::new([1u8; 32]);
@@ -64,7 +57,7 @@ async fn setup() -> (Vec<WalletUnlocked>, Predicate, Provider) {
     let deployer = wallets[0].clone();
     let fuel_provider = deployer.provider().unwrap();
 
-    let mut predicate = get_predicate(deployer.address().into(), &fuel_provider);
+    let predicate = get_predicate(deployer.address().into(), &fuel_provider);
 
     deployer
         .transfer(predicate.address(), 1, TOKEN_A, TxParameters::default())

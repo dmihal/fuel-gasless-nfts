@@ -2362,6 +2362,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "packet_predicate"
+version = "0.1.0"
+dependencies = [
+ "fuels",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
 name = "parity-scale-codec"
 version = "3.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
