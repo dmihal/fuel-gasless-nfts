@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+  "./packet_minter",
   "./packet_predicate",
   "./integration_tests",
 ]
