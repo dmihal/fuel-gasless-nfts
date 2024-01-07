@@ -31,20 +31,15 @@ use std::{
 configurable {
     SIGNER: Address = Address::from(ZERO_B256),
     NFT_CONTRACT_ID: ContractId = ContractId::from(ZERO_B256),
+    PACKET_MINTER_CONTRACT_ID: ContractId = ContractId::from(ZERO_B256),
     EXPECTED_SCRIPT_BYTECODE_HASH: b256 = ZERO_B256,
 }
 
 const GTF_INPUT_CONTRACT_CONTRACT_ID = 0x113;
 
-fn main(sub_ids: Vec<SubId>) -> bool {
-    let signature: B512 = tx_witness_data(tx_witnesses_count() - 1);
-
-    let signer_address = ec_recover_address(signature, sha256(tx_id())).unwrap();
-    if (signer_address != SIGNER) {
-        return false;
-    }
-
+fn main(sub_ids: Vec<SubId>, signature_index: Option<u64>) -> bool {
     let is_script_valid = if (tx_script_length() > 0) {
+        // TODO: if using script + packets, check recipient
         let script_bytecode_hash: b256 = tx_script_bytecode_hash();
         script_bytecode_hash == EXPECTED_SCRIPT_BYTECODE_HASH
     } else { true };
@@ -66,6 +61,9 @@ fn main(sub_ids: Vec<SubId>) -> bool {
         i = i + 1;
     }
 
+    let mut unknown_asset_ids: Vec<AssetId> = Vec::with_capacity(sub_ids.len);
+    let mut potential_packet_ids: Vec<AssetId> = Vec::with_capacity(sub_ids.len);
+
     // Check all inputs are valid
     let num_inputs = input_count().as_u64();
     i = 0;
@@ -79,8 +77,20 @@ fn main(sub_ids: Vec<SubId>) -> bool {
                         return false;
                     }
                 } else {
-                    if !asset_exists_in_vec(asset_id, nft_asset_ids) {
-                        return false;
+                    let asset_is_nft = asset_exists_in_vec(asset_id, nft_asset_ids);
+
+                    if asset_is_nft && signature_index.is_none() {
+                        let owner = input_owner(i).unwrap();
+                        // There's no relayer signature, so we need to track all NFT owners so we can look for packets later
+                        potential_packet_ids.push(AssetId::new(PACKET_MINTER_CONTRACT_ID, owner.value));
+                    }
+
+                    if !asset_is_nft {
+                        if signature_index.is_some() {
+                            return false;
+                        } else {
+                            unknown_asset_ids.push(asset_id);
+                        }
                     }
                 }
             },
@@ -89,7 +99,7 @@ fn main(sub_ids: Vec<SubId>) -> bool {
             },
             Input::Contract => {
                 let contract_id = input_contract_id(i).unwrap();
-                if (contract_id != NFT_CONTRACT_ID) {
+                if (contract_id != NFT_CONTRACT_ID && contract_id != PACKET_MINTER_CONTRACT_ID) {
                     return false;
                 }
             },
@@ -105,9 +115,9 @@ fn main(sub_ids: Vec<SubId>) -> bool {
     while i < num_outputs {
         match output_type(i) {
             Output::Coin => {
-                // Coins can only be NFTs, ETH must be returned in gas
+                // ETH must be returned to the predicate as change. All other inputs are validated
                 let asset_id = output_asset_id(i).unwrap();
-                if !asset_exists_in_vec(asset_id, nft_asset_ids) {
+                if asset_id == AssetId::from(ZERO_B256) {
                     return false;
                 }
             },
@@ -133,6 +143,28 @@ fn main(sub_ids: Vec<SubId>) -> bool {
         i = i + 1;
     }
     if (!returns_eth_to_predicate) {
+        return false;
+    }
+
+    if (signature_index.is_some()) {
+        let signature: B512 = tx_witness_data(signature_index.unwrap());
+
+        let signer_address = ec_recover_address(signature, sha256(tx_id())).unwrap();
+        if (signer_address != SIGNER) {
+            return false;
+        }
+    } else if (unknown_asset_ids.len > 0) {
+        let mut i = 0;
+        while i < unknown_asset_ids.len {
+            let unknown_asset_is_packet = asset_exists_in_vec(unknown_asset_ids.get(i).unwrap(), potential_packet_ids);
+            if (!unknown_asset_is_packet) {
+                return false;
+            }
+            i = i + 1;
+        }
+    } else {
+        // If there's no "unknown assets", then there's no packets
+        // If there's no packets & no signature, then the transaction is invalid
         return false;
     }
 
