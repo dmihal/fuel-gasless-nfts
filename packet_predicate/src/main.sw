@@ -46,7 +46,6 @@ fn main(signature_witness_id: Option<u64>) -> bool {
 
             let num_outputs = output_count();
             let mut i = 0;
-            let mut returns_eth_to_predicate = false;
 
             while i < num_outputs {
                 match output_type(i) {
@@ -70,7 +69,7 @@ fn main(signature_witness_id: Option<u64>) -> bool {
 
 fn predicate_input_index() -> u64 {
     asm(r1) {
-        gm   r1 i3;
+        gm r1 i3;
         r1: u64
     }
 }
