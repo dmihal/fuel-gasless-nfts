@@ -1,6 +1,6 @@
 [[package]]
 name = "core"
-source = "path+from-root-BD9159206068AEC6"
+source = "path+from-root-8F21338A4FBE8900"
 
 [[package]]
 name = "gas_predicate"
@@ -24,11 +24,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "owner_predicate"
-source = "member"
-dependencies = ["std"]
-
-[[package]]
 name = "packet_minter"
 source = "member"
 dependencies = [
@@ -43,10 +38,10 @@ dependencies = ["std"]
 
 [[package]]
 name = "shared"
-source = "path+from-root-A80B1280810C2185"
+source = "member"
 dependencies = ["std"]
 
 [[package]]
 name = "std"
-source = "git+https://github.com/fuellabs/sway?tag=v0.46.1#512a3386f8961185188302f391ccc96553d23a7a"
+source = "git+https://github.com/fuellabs/sway?rev#a676a3d981af12b7e696baa0d64ff9eeff1ed3a3"
 dependencies = ["core"]

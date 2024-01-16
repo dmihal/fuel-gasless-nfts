@@ -11,7 +11,7 @@ use std::{
     inputs::{
         input_amount,
         input_asset_id,
-        input_owner,
+        input_coin_owner,
     },
     outputs::{
         Output,
@@ -40,7 +40,7 @@ fn main(signature_witness_id: Option<u64>) -> bool {
         }
         None => {
             let input_index = predicate_input_index();
-            let predicate_address = input_owner(input_index).unwrap();
+            let predicate_address = input_coin_owner(input_index).unwrap();
             let input_id = input_asset_id(input_index).unwrap();
             let input_amt = input_amount(input_index).unwrap();
 

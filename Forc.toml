@@ -3,7 +3,7 @@ members = [
   "./gas_predicate",
   "./nft",
   "./nft_script",
-  "./owner_predicate",
   "./packet_minter",
   "./packet_predicate",
+  "./shared",
 ]
