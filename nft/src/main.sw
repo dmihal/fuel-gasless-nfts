@@ -37,6 +37,7 @@ impl Mint for Contract {
     }
 }
 
+// Note: some functions commented out, blocked by https://github.com/FuelLabs/sway/issues/5492
 impl SRC20 for Contract {
     /// Returns the total number of individual assets minted  by this contract.
     ///
@@ -127,11 +128,12 @@ impl SRC20 for Contract {
     /// ```
     #[storage(read)]
     fn name(asset: AssetId) -> Option<String> {
-        match storage.total_supply.get(asset).try_read() {
-            // Option::Some(_supply) => Some("My NFT"),
-            Option::Some(_supply) => Option::None,
-            Option::None => Option::None,
-        }
+        // match storage.total_supply.get(asset).try_read() {
+        //     // Option::Some(_supply) => Some("My NFT"),
+        //     Option::Some(_supply) => Option::None,
+        //     Option::None => Option::None,
+        // }
+        None
     }
 
     /// Returns the symbol of am asset.
@@ -162,11 +164,12 @@ impl SRC20 for Contract {
     /// ```
     #[storage(read)]
     fn symbol(asset: AssetId) -> Option<String> {
-        match storage.total_supply.get(asset).try_read() {
-            // Option::Some(_supply) => Some("NFT"),
-            Option::Some(_supply) => Option::None,
-            Option::None => Option::None,
-        }
+        // match storage.total_supply.get(asset).try_read() {
+        //     // Option::Some(_supply) => Some("NFT"),
+        //     Option::Some(_supply) => Option::None,
+        //     Option::None => Option::None,
+        // }
+        None
     }
 
     /// Returns the number of decimals an asset uses.
@@ -197,10 +200,12 @@ impl SRC20 for Contract {
     /// ```
     #[storage(read)]
     fn decimals(asset: AssetId) -> Option<u8> {
-        match storage.total_supply.get(asset).try_read() {
-            Option::Some(_supply) => Some(0),
-            Option::None => Option::None,
-        }
+        // match storage.total_supply.get(asset).try_read() {
+        //     Option::Some(_supply) => Option::Some(0),
+        //     Option::None => Option::None,
+        //     _ => Option::None,
+        // }
+        Some(0)
     }
 }
 

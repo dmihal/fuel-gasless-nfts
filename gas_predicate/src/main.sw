@@ -8,7 +8,7 @@ use std::{
         Input,
         input_asset_id,
         input_count,
-        input_owner,
+        input_coin_owner,
         input_type,
     },
     outputs::{
@@ -72,7 +72,7 @@ fn main(sub_ids: Vec<SubId>, signature_index: Option<u64>) -> bool {
             Input::Coin => {
                 let asset_id = input_asset_id(i).unwrap();
                 if (asset_id == AssetId::from(ZERO_B256)) {
-                    let owner = input_owner(i).unwrap();
+                    let owner = input_coin_owner(i).unwrap();
                     if (owner != predicate_addr) {
                         return false;
                     }
@@ -80,7 +80,7 @@ fn main(sub_ids: Vec<SubId>, signature_index: Option<u64>) -> bool {
                     let asset_is_nft = asset_exists_in_vec(asset_id, nft_asset_ids);
 
                     if asset_is_nft && signature_index.is_none() {
-                        let owner = input_owner(i).unwrap();
+                        let owner = input_coin_owner(i).unwrap();
                         // There's no relayer signature, so we need to track all NFT owners so we can look for packets later
                         potential_packet_ids.push(AssetId::new(PACKET_MINTER_CONTRACT_ID, owner.value));
                     }
@@ -176,7 +176,7 @@ fn predicate_address() -> Address {
         gm r1 i3;
         r1: u64
     };
-    input_owner(predicate_index).unwrap()
+    input_coin_owner(predicate_index).unwrap()
 }
 
 
